@@ -7,6 +7,7 @@ import (
 
 func main() {
 	ygopro_analytics.Initialize()
-	ygopro_analytics.StartServer()
 	gocron.Every(5).Minutes().Do(ygopro_analytics.Push)
+	go gocron.Start()
+	ygopro_analytics.StartServer()
 }

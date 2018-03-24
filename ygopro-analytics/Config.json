@@ -4,6 +4,6 @@
     "Password": "",
     "Database": "postgres"
   },
-  "DatabasePath": "",
+  "DatabasePath": "/Users/iami/Programming/Go/ygopro/ygopro-database/locales",
   "DeckIdentifierHost": "https://api.mycard.moe/ygopro/identifier/production"
 }
