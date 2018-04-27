@@ -12,6 +12,7 @@ var db *pg.DB
 
 func initializeAnalyzers() {
 	environment = ygopro_data.GetEnvironment("zh-CN")
+	environment.LoadAllCards()
 	countAnalyzer := analyzers.NewCountAnalyzer()
 	singleAnalyzer := analyzers.NewSingleCardAnalyzer(environment)
 	deckAnalyzer := analyzers.NewDeckAnalyzer(Config.DeckIdentifierHost)
