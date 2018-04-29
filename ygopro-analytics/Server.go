@@ -19,7 +19,11 @@ func Initialize() {
 }
 
 func StartServer() {
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
+	if gin.IsDebugging() {
+		router.Use(gin.Logger())
+	}
 	router.GET("/", func(context *gin.Context) {
 		context.String(200, "MCPro Analyzer is working.")
 	})
