@@ -70,7 +70,7 @@ func (analyzer *SingleCardAnalyzer) Analyze(deck *ygopro_data.Deck, source strin
 		analyzer.cache[source] = target
 	}
 	for id, count := range deck.ClassifiedMain {
-		if card, ok := analyzer.environment.GetCard(id); ok {
+		if card, ok := analyzer.environment.Cards[id]; ok {
 			if card.IsType("monster") {
 				addSingleCardDataTo(&target.monster, id, count)
 			} else if card.IsType("spell") {
