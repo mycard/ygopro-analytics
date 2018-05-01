@@ -41,6 +41,9 @@ func (analyzer *CountAnalyzer) Push(db *pg.DB) {
 		buffer.Reset()
 	}
 	analyzer.cache = make(map[string]int)
+	if len(data) == 0 {
+		return
+	}
 	buffer.Reset()
 	buffer.WriteString("insert into counter values ")
 	buffer.WriteString(strings.Join(data, ", "))
