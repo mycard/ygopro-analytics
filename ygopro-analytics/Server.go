@@ -16,6 +16,7 @@ func Initialize() {
 	initializeLogger()
 	initializeAnalyzers()
 	initializeDatabaseConnection()
+	Logger.Info("Analytics server started.")
 }
 
 func StartServer() {

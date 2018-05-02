@@ -45,9 +45,9 @@ func (analyzer *CountAnalyzer) Push(db *pg.DB) {
 		return
 	}
 	buffer.Reset()
-	buffer.WriteString("insert into counter values ")
+	buffer.WriteString("insert into count values ")
 	buffer.WriteString(strings.Join(data, ", "))
-	buffer.WriteString(" on conflict on constraint counter_environment do update set count = counter.count + excluded.count")
+	buffer.WriteString(" on conflict on constraint count_environment do update set count = counter.count + excluded.count")
 	if _, err := db.Exec(buffer.String()); err != nil {
 		Logger.Errorf("Counter failed pushing to database: %v\n", err)
 	}
