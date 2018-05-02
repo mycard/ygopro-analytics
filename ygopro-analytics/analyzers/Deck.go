@@ -10,11 +10,14 @@ import (
 	"time"
 	"strings"
 	"strconv"
+	"sync"
 )
 
+// deckCache map[string]map[string]int
+// tagCache map[string]map[string]int
 type DeckAnalyzer struct {
-	deckCache map[string]map[string]int
-	tagCache map[string]map[string]int
+	deckCache sync.Map
+	tagCache sync.Map
 	DeckIdentifierHost string
 }
 
@@ -24,32 +27,34 @@ type deckInfo struct {
 }
 
 func NewDeckAnalyzer(deckIdentifierHost string) DeckAnalyzer {
-	return DeckAnalyzer { make(map[string]map[string]int), make(map[string]map[string]int), deckIdentifierHost }
+	return DeckAnalyzer { sync.Map{}, sync.Map{}, deckIdentifierHost }
 }
 
 func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) {
-	var count int
-	var ok bool
-	var deckCacheTarget map[string]int
-	var tagCacheTarget map[string]int
-	if deckCacheTarget, ok = analyzer.deckCache[source]; !ok {
-		deckCacheTarget = make(map[string]int)
-		analyzer.deckCache[source] = deckCacheTarget
-	}
-	if tagCacheTarget, ok = analyzer.tagCache[source]; !ok {
-		tagCacheTarget = make(map[string]int)
-		analyzer.tagCache[source] = tagCacheTarget
-	}
-	if count, ok = deckCacheTarget[info.Deck]; ok {
-		deckCacheTarget[info.Deck] = count + 1
+	var deckCacheTarget sync.Map
+	var tagCacheTarget sync.Map
+	if untypedDeckCacheTarget, ok := analyzer.deckCache.Load(source); !ok {
+		deckCacheTarget = sync.Map{}
+		analyzer.deckCache.Store(source, deckCacheTarget)
 	} else {
-		deckCacheTarget[info.Deck] = 1
+		deckCacheTarget = untypedDeckCacheTarget.(sync.Map)
+	}
+	if untypedTagCacheTarget, ok := analyzer.tagCache.Load(source); !ok {
+		tagCacheTarget = sync.Map{}
+		analyzer.tagCache.Store(source, tagCacheTarget)
+	} else {
+		tagCacheTarget = untypedTagCacheTarget.(sync.Map)
+	}
+	if untypedCount, ok := deckCacheTarget.Load(info.Deck); ok {
+		deckCacheTarget.Store(info.Deck, untypedCount.(int) + 1)
+	} else {
+		deckCacheTarget.Store(info.Deck, 1)
 	}
 	for _, tag := range info.Tag {
-		if count, ok = tagCacheTarget[tag]; ok {
-			tagCacheTarget[tag] = count + 1
+		if untypedCount, ok := tagCacheTarget.Load(tag); ok {
+			tagCacheTarget.Store(tag, untypedCount.(int) + 1)
 		} else {
-			tagCacheTarget[tag] = 1
+			tagCacheTarget.Store(tag, 1)
 		}
 	}
 }
@@ -87,38 +92,46 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 	var deckValues []string
 	var tagValues []string
 	currentTime := time.Now().Format("2006-01-02")
-	for source, data := range analyzer.deckCache {
-		for name, count := range data {
+
+	analyzer.deckCache.Range(func(untypedSource, untypedData interface{}) bool {
+		data := untypedData.(sync.Map)
+		data.Range(func(untypedName, untypedCount interface{}) bool {
 			tempBuffer.Reset()
 			tempBuffer.WriteString("('")
-			tempBuffer.WriteString(name)
+			tempBuffer.WriteString(untypedName.(string))
 			tempBuffer.WriteString("', '")
 			tempBuffer.WriteString(currentTime)
 			tempBuffer.WriteString("', 1, '")
-			tempBuffer.WriteString(source)
+			tempBuffer.WriteString(untypedSource.(string))
 			tempBuffer.WriteString("', ")
-			tempBuffer.WriteString(strconv.Itoa(count))
+			tempBuffer.WriteString(strconv.Itoa(untypedCount.(int)))
 			tempBuffer.WriteString(")")
 			deckValues = append(deckValues, tempBuffer.String())
-		}
-	}
-	for source, data := range analyzer.tagCache {
-		for name, count := range data {
+			return true
+		})
+		return true
+	})
+
+	analyzer.tagCache.Range(func(untypedSource, untypedData interface{}) bool {
+		data := untypedData.(sync.Map)
+		data.Range(func(untypedName, untypedCount interface{}) bool {
 			tempBuffer.Reset()
 			tempBuffer.WriteString("('")
-			tempBuffer.WriteString(name)
+			tempBuffer.WriteString(untypedName.(string))
 			tempBuffer.WriteString("', '")
 			tempBuffer.WriteString(currentTime)
 			tempBuffer.WriteString("', 1, '")
-			tempBuffer.WriteString(source)
+			tempBuffer.WriteString(untypedSource.(string))
 			tempBuffer.WriteString("', ")
-			tempBuffer.WriteString(strconv.Itoa(count))
+			tempBuffer.WriteString(strconv.Itoa(untypedCount.(int)))
 			tempBuffer.WriteString(")")
 			tagValues = append(tagValues, tempBuffer.String())
-		}
-	}
-	analyzer.deckCache = make(map[string]map[string]int)
-	analyzer.tagCache = make(map[string]map[string]int)
+			return true
+		})
+		return true
+	})
+	analyzer.deckCache = sync.Map{}
+	analyzer.tagCache = sync.Map{}
 	if len(deckValues) > 0 {
 		deckBuffer.WriteString("insert into deck values")
 		deckBuffer.WriteString(strings.Join(deckValues, ", "))
