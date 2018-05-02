@@ -63,13 +63,19 @@ func (analyzer *DeckAnalyzer) Analyze(deck *ygopro_data.Deck, source string) {
 
 func (analyzer *DeckAnalyzer) fetchDeckInfo(deck *ygopro_data.Deck, channel chan *deckInfo) {
 	resp, err := http.PostForm(analyzer.DeckIdentifierHost, url.Values{ "deck": { deck.ToYdk() } })
+	var info deckInfo
 	if err != nil {
 		Logger.Warningf("Deck Analyzer failed fetching identifier header: %v\n", err)
+		info.Deck = "No name due to network"
+		channel <- &info
+		return
 	}
 	decoder := json.NewDecoder(resp.Body)
-	var info deckInfo
 	if err = decoder.Decode(&info); err != nil {
 		Logger.Warningf("Deck Analyzer failed fetching identifier content: %v\n", err)
+		info.Deck = "No name due to parsing"
+		channel <- &info
+		return
 	}
 	channel <- &info
 }
