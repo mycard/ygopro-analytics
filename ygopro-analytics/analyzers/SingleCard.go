@@ -124,7 +124,9 @@ func (analyzer *SingleCardAnalyzer) Push(db *pg.DB) {
 		"frequency = single.frequency + excluded.frequency, numbers = single.numbers + excluded.numbers, " +
 		"putone = single.putone + excluded.putone, puttwo = single.puttwo + excluded.puttwo, " +
 		"putthree = single.putthree + excluded.putthree, putoverthree = single.putoverthree + excluded.putoverthree")
-	if _, err := db.Exec(buffer.String()); err != nil {
+	sql := buffer.String()
+	Logger.Debugf("Single sql exec: %v", sql)
+	if _, err := db.Exec(sql); err != nil {
 		Logger.Errorf("Single Analyzer failed pushing to database: %v\n", err)
 	}
 }

@@ -137,7 +137,9 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 		deckBuffer.WriteString(strings.Join(deckValues, ", "))
 		deckBuffer.WriteString("  on conflict on constraint card_environment_deck do update set " +
 			"count = deck.count + excluded.count")
-		if _, err := db.Exec(deckBuffer.String()); err != nil {
+		sql := deckBuffer.String()
+		Logger.Debugf("Deck sql exec: %v", sql)
+		if _, err := db.Exec(sql); err != nil {
 			Logger.Errorf("Deck Analyzer failed pushing deck information to database: %v\n", err)
 		}
 	}
@@ -146,7 +148,9 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 		tagBuffer.WriteString(strings.Join(tagValues, ", "))
 		tagBuffer.WriteString("  on conflict on constraint card_environment_tag do update set " +
 			"count = tag.count + excluded.count")
-		if _, err := db.Exec(tagBuffer.String()); err != nil {
+		sql := tagBuffer.String()
+		Logger.Debugf("Tag sql exec: %v", sql)
+		if _, err := db.Exec(sql); err != nil {
 			Logger.Errorf("Deck Analyzer failed pushing tag information to database: %v\n", err)
 		}
 	}

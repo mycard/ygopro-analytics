@@ -47,12 +47,17 @@ func (analyzer *CountAnalyzer) Push(db *pg.DB) {
 	})
 	analyzer.cache = sync.Map{}
 	if len(data) == 0 {
+		Logger.Warning("No data will post.")
 		return
+	} else {
+		Logger.Infof("%v decks' data will be post.", len(data))
 	}
 	buffer.Reset()
 	buffer.WriteString("insert into counter values ")
 	buffer.WriteString(strings.Join(data, ", "))
 	buffer.WriteString(" on conflict on constraint counter_environment do update set count = counter.count + excluded.count")
+	sql := buffer.String()
+	Logger.Debugf("Counter sql exec: %v", sql)
 	if _, err := db.Exec(buffer.String()); err != nil {
 		Logger.Errorf("Counter failed pushing to database: %v\n", err)
 	}

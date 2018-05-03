@@ -59,7 +59,11 @@ func initializeLogger()  {
 	backendPrototype := logging.NewLogBackend(os.Stderr, "", 0)
 	fBackend := logging.NewBackendFormatter(backendPrototype, format)
 	lBackend := logging.AddModuleLevel(fBackend)
-	lBackend.SetLevel(logging.INFO, "")
+	if gin.IsDebugging() {
+		lBackend.SetLevel(logging.DEBUG, "")
+	} else {
+		lBackend.SetLevel(logging.INFO, "")
+	}
 	NormalLoggingBackend = lBackend
 	logging.SetBackend(NormalLoggingBackend)
 	analyzers.Logger = Logger
