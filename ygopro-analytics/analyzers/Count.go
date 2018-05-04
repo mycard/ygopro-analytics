@@ -13,10 +13,11 @@ import (
 // cache map[string]int
 type CountAnalyzer struct {
 	cache sync.Map
+	count int
 }
 
 func NewCountAnalyzer() CountAnalyzer {
-	return CountAnalyzer{ sync.Map{} }
+	return CountAnalyzer{ sync.Map{}, 0 }
 }
 
 func (analyzer *CountAnalyzer) Analyze(deck *ygopro_data.Deck, source string) {
@@ -25,6 +26,7 @@ func (analyzer *CountAnalyzer) Analyze(deck *ygopro_data.Deck, source string) {
 	} else {
 		analyzer.cache.Store(source, 1)
 	}
+	analyzer.count += 1
 }
 
 func (analyzer *CountAnalyzer) Push(db *pg.DB) {
@@ -45,17 +47,20 @@ func (analyzer *CountAnalyzer) Push(db *pg.DB) {
 		buffer.Reset()
 		return true
 	})
+
 	analyzer.cache = sync.Map{}
 	if len(data) == 0 {
 		Logger.Warning("No data will post.")
 		return
 	} else {
-		Logger.Infof("%v decks' data will be post.", len(data))
+		Logger.Infof("%v decks in %v types data will be post.", analyzer.count, len(data))
 	}
+	analyzer.count = 0
+
 	buffer.Reset()
-	buffer.WriteString("insert into counter values ")
+	buffer.WriteString("insert into count values ")
 	buffer.WriteString(strings.Join(data, ", "))
-	buffer.WriteString(" on conflict on constraint counter_environment do update set count = counter.count + excluded.count")
+	buffer.WriteString(" on conflict on constraint count_environment do update set count = count.count + excluded.count")
 	sql := buffer.String()
 	Logger.Debugf("Counter sql exec: %v", sql)
 	if _, err := db.Exec(buffer.String()); err != nil {

@@ -68,12 +68,13 @@ func addSingleCardDataTo(target *sync.Map, id int, count int) {
 }
 
 func (analyzer *SingleCardAnalyzer) Analyze(deck *ygopro_data.Deck, source string) {
-	var target singleCardSourceData
+	var target *singleCardSourceData
 	if untypedTarget, ok := analyzer.cache.Load(source); !ok {
-		target = newSingleCardSourceData()
+		obj := newSingleCardSourceData()
+		target = &obj
 		analyzer.cache.Store(source, target)
 	} else {
-		target = untypedTarget.(singleCardSourceData)
+		target = untypedTarget.(*singleCardSourceData)
 	}
 	for id, count := range deck.ClassifiedMain {
 		if card, ok := analyzer.environment.Cards[id]; ok {
@@ -100,7 +101,7 @@ func (analyzer *SingleCardAnalyzer) Push(db *pg.DB) {
 	currentTime := time.Now().Format("2006-01-02")
 	analyzer.cache.Range(func(untypedSource, untypedSourceData interface{}) bool {
 		source := untypedSource.(string)
-		sourceData := untypedSourceData.(singleCardSourceData)
+		sourceData := untypedSourceData.(*singleCardSourceData)
 		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "monster", sourceData.monster))
 		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "spell", sourceData.spell))
 		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "trap", sourceData.trap))

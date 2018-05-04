@@ -31,19 +31,19 @@ func NewDeckAnalyzer(deckIdentifierHost string) DeckAnalyzer {
 }
 
 func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) {
-	var deckCacheTarget sync.Map
-	var tagCacheTarget sync.Map
+	var deckCacheTarget *sync.Map
+	var tagCacheTarget *sync.Map
 	if untypedDeckCacheTarget, ok := analyzer.deckCache.Load(source); !ok {
-		deckCacheTarget = sync.Map{}
+		deckCacheTarget = &sync.Map{}
 		analyzer.deckCache.Store(source, deckCacheTarget)
 	} else {
-		deckCacheTarget = untypedDeckCacheTarget.(sync.Map)
+		deckCacheTarget = untypedDeckCacheTarget.(*sync.Map)
 	}
 	if untypedTagCacheTarget, ok := analyzer.tagCache.Load(source); !ok {
-		tagCacheTarget = sync.Map{}
+		tagCacheTarget = &sync.Map{}
 		analyzer.tagCache.Store(source, tagCacheTarget)
 	} else {
-		tagCacheTarget = untypedTagCacheTarget.(sync.Map)
+		tagCacheTarget = untypedTagCacheTarget.(*sync.Map)
 	}
 	if untypedCount, ok := deckCacheTarget.Load(info.Deck); ok {
 		deckCacheTarget.Store(info.Deck, untypedCount.(int) + 1)
@@ -94,7 +94,7 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 	currentTime := time.Now().Format("2006-01-02")
 
 	analyzer.deckCache.Range(func(untypedSource, untypedData interface{}) bool {
-		data := untypedData.(sync.Map)
+		data := untypedData.(*sync.Map)
 		data.Range(func(untypedName, untypedCount interface{}) bool {
 			tempBuffer.Reset()
 			tempBuffer.WriteString("('")
@@ -113,7 +113,7 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 	})
 
 	analyzer.tagCache.Range(func(untypedSource, untypedData interface{}) bool {
-		data := untypedData.(sync.Map)
+		data := untypedData.(*sync.Map)
 		data.Range(func(untypedName, untypedCount interface{}) bool {
 			tempBuffer.Reset()
 			tempBuffer.WriteString("('")
