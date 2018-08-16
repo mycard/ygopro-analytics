@@ -43,7 +43,8 @@ func StartServer() {
 	})
 
 	router.POST("/reload", func(context *gin.Context) {
-
+		ygopro_data.LoadAllEnvironmentCards()
+		context.String(200, "ok")
 	})
 
 	router.Run(":8081")
