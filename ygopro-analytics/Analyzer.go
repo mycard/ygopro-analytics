@@ -25,11 +25,12 @@ func initializeDatabaseConnection() {
 	db = pg.Connect(&Config.Postgres)
 }
 
-func Analyze(deck *ygopro_data.Deck, source string) {
+func Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	deck.SeparateExFromMainFromCache(environment)
+	deck.Summary()
 	deck.Classify()
 	for _, analyzer := range onlineAnalyzers {
-		analyzer.Analyze(deck, source)
+		analyzer.Analyze(deck, source, playerName)
 	}
 }
 

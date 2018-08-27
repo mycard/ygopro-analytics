@@ -7,7 +7,7 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(deck *ygopro_data.Deck, source string)
+	Analyze(deck *ygopro_data.Deck, source string, playerName string)
 	Push(db *pg.DB)
 }
 

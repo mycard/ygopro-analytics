@@ -37,8 +37,9 @@ func StartServer() {
 	router.POST("/deck", func(context *gin.Context) {
 		source := context.DefaultPostForm("arena", "unknown")
 		deckString := context.DefaultPostForm("deck", "")
+		playerName := context.DefaultPostForm("playername", "Unknown")
 		deck := ygopro_data.LoadYdkFromString(deckString)
-		Analyze(&deck, source)
+		Analyze(&deck, source, playerName)
 		context.String(200, "analyzing")
 	})
 

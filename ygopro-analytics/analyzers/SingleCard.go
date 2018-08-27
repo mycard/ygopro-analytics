@@ -67,7 +67,7 @@ func addSingleCardDataTo(target *sync.Map, id int, count int) {
 	data.frequency += count
 }
 
-func (analyzer *SingleCardAnalyzer) Analyze(deck *ygopro_data.Deck, source string) {
+func (analyzer *SingleCardAnalyzer) Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	var target *singleCardSourceData
 	if untypedTarget, ok := analyzer.cache.Load(source); !ok {
 		obj := newSingleCardSourceData()

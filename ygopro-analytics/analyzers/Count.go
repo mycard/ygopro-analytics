@@ -20,7 +20,7 @@ func NewCountAnalyzer() CountAnalyzer {
 	return CountAnalyzer{ sync.Map{}, 0 }
 }
 
-func (analyzer *CountAnalyzer) Analyze(deck *ygopro_data.Deck, source string) {
+func (analyzer *CountAnalyzer) Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	if untypedCount, ok := analyzer.cache.Load(source); ok {
 		analyzer.cache.Store(source, untypedCount.(int) + 1)
 	} else {

@@ -19,6 +19,7 @@ type DeckAnalyzer struct {
 	deckCache sync.Map
 	tagCache sync.Map
 	DeckIdentifierHost string
+	UnknownDecks []unknownDeckDetail
 }
 
 type deckInfo struct {
@@ -26,8 +27,15 @@ type deckInfo struct {
 	Tag []string
 }
 
+type unknownDeckDetail struct {
+	Deck *ygopro_data.Deck
+	Source string
+	User string
+	Time time.Time
+}
+
 func NewDeckAnalyzer(deckIdentifierHost string) DeckAnalyzer {
-	return DeckAnalyzer { sync.Map{}, sync.Map{}, deckIdentifierHost }
+	return DeckAnalyzer { sync.Map{}, sync.Map{}, deckIdentifierHost, make([]unknownDeckDetail, 0) }
 }
 
 func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) {
@@ -60,10 +68,13 @@ func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) 
 	}
 }
 
-func (analyzer *DeckAnalyzer) Analyze(deck *ygopro_data.Deck, source string) {
+func (analyzer *DeckAnalyzer) Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	ch := make(chan *deckInfo)
 	go analyzer.fetchDeckInfo(deck, ch)
 	info := <- ch
+	if info.Deck == "迷之卡组" {
+		analyzer.UnknownDecks = append(analyzer.UnknownDecks, unknownDeckDetail{deck, source, playerName, time.Now()})
+	}
 	analyzer.addDeckInfoToCache(source, info)
 }
 
@@ -154,6 +165,10 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 		if _, err := db.Exec(sql); err != nil {
 			Logger.Errorf("Deck Analyzer failed pushing tag information to database: %v\n", err)
 		}
+	}
+
+	if len(analyzer.UnknownDecks) > 0 {
+		analyzer.UnknownDecks = make([]unknownDeckDetail, 0)
 	}
 }
 
