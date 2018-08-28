@@ -101,8 +101,11 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 	var tempBuffer bytes.Buffer
 	var deckBuffer bytes.Buffer
 	var tagBuffer bytes.Buffer
+	var unknownBuffer bytes.Buffer
 	var deckValues []string
 	var tagValues []string
+	var unknownValues []string
+
 	currentTime := time.Now().Format("2006-01-02")
 
 	analyzer.deckCache.Range(func(untypedSource, untypedData interface{}) bool {
@@ -142,8 +145,25 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 		})
 		return true
 	})
+
+	for _, detail := range analyzer.UnknownDecks {
+		tempBuffer.Reset()
+		tempBuffer.WriteString("('")
+		tempBuffer.WriteString(detail.Deck.ToYdk())
+		tempBuffer.WriteString("', '")
+		tempBuffer.WriteString(detail.User)
+		tempBuffer.WriteString("', '")
+		tempBuffer.WriteString(detail.Source)
+		tempBuffer.WriteString("', '")
+		tempBuffer.WriteString(detail.Time.Format("2006-01-02 03:04:05"))
+		tempBuffer.WriteString("')")
+		unknownValues = append(unknownValues, tempBuffer.String())
+	}
+
 	analyzer.deckCache = sync.Map{}
 	analyzer.tagCache = sync.Map{}
+	analyzer.UnknownDecks = make([]unknownDeckDetail, 0)
+
 	if len(deckValues) > 0 {
 		deckBuffer.WriteString("insert into deck values")
 		deckBuffer.WriteString(strings.Join(deckValues, ", "))
@@ -167,8 +187,14 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 		}
 	}
 
-	if len(analyzer.UnknownDecks) > 0 {
-		analyzer.UnknownDecks = make([]unknownDeckDetail, 0)
+	if len(unknownValues) > 0 {
+		unknownBuffer.WriteString("insert into unknown_decks values")
+		unknownBuffer.WriteString(strings.Join(unknownValues, ", "))
+		sql := unknownBuffer.String()
+		Logger.Debugf("Unknown sql exec: %v", sql)
+		if _, err := db.Exec(sql); err != nil {
+			Logger.Errorf("Deck Analyzer failed pushing unknown deck information to database: %v\n", err)
+		}
 	}
 }
 
