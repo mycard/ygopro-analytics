@@ -26,8 +26,8 @@ func initializeDatabaseConnection() {
 }
 
 func Analyze(deck *ygopro_data.Deck, source string, playerName string) {
+	deck.RemoveAlias(environment)
 	deck.SeparateExFromMainFromCache(environment)
-	deck.Summary()
 	deck.Classify()
 	for _, analyzer := range onlineAnalyzers {
 		analyzer.Analyze(deck, source, playerName)
