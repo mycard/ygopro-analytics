@@ -102,11 +102,11 @@ func (analyzer *SingleCardAnalyzer) Push(db *pg.DB) {
 	analyzer.cache.Range(func(untypedSource, untypedSourceData interface{}) bool {
 		source := untypedSource.(string)
 		sourceData := untypedSourceData.(*singleCardSourceData)
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "monster", sourceData.monster))
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "spell", sourceData.spell))
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "trap", sourceData.trap))
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "side", sourceData.side))
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "ex", sourceData.ex))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "monster", &sourceData.monster))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "spell", &sourceData.spell))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "trap", &sourceData.trap))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "side", &sourceData.side))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "ex", &sourceData.ex))
 		return true
 	})
 	data := make([]string, 0)
@@ -133,7 +133,7 @@ func (analyzer *SingleCardAnalyzer) Push(db *pg.DB) {
 }
 
 // target map[int]*singleCardData
-func generateSingleCardSourceSQL(source string, time string, category string, target sync.Map) string {
+func generateSingleCardSourceSQL(source string, time string, category string, target *sync.Map) string {
 	value := make([]string, 0)
 	var buffer bytes.Buffer
 	target.Range(func(untypedId, untypedData interface{}) bool {
