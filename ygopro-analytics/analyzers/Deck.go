@@ -2,6 +2,7 @@ package analyzers
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/go-pg/pg"
 	"github.com/iamipanda/ygopro-data"
 	"net/http"
