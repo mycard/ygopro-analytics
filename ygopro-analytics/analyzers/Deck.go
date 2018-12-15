@@ -1,16 +1,15 @@
 package analyzers
 
 import (
-	"github.com/iamipanda/ygopro-data"
+	"bytes"
 	"github.com/go-pg/pg"
+	"github.com/iamipanda/ygopro-data"
 	"net/http"
 	"net/url"
-	"github.com/gin-gonic/gin/json"
-	"bytes"
-	"time"
-	"strings"
 	"strconv"
+	"strings"
 	"sync"
+	"time"
 )
 
 // deckCache map[string]map[string]int
