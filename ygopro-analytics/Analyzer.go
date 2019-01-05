@@ -7,6 +7,7 @@ import (
 )
 
 var onlineAnalyzers = make([]analyzers.Analyzer, 0)
+var onlineMessageAnalyzers = make([]analyzers.MessageAnalyzer, 0)
 var environment *ygopro_data.Environment
 var db *pg.DB
 
@@ -18,7 +19,10 @@ func initializeAnalyzers() {
 	deckAnalyzer := analyzers.NewDeckAnalyzer(Config.DeckIdentifierHost)
 	onlineAnalyzers = append(onlineAnalyzers, &countAnalyzer)
 	onlineAnalyzers = append(onlineAnalyzers, &singleAnalyzer)
-	onlineAnalyzers = append(onlineAnalyzers, &deckAnalyzer)
+	// onlineAnalyzers = append(onlineAnalyzers, &deckAnalyzer)
+	matchUpAnalyzer := analyzers.NewMatchUpAnalyzer(Config.DeckIdentifierHost)
+	matchUpAnalyzer.Next = append(matchUpAnalyzer.Next, &deckAnalyzer)
+	onlineMessageAnalyzers = append(onlineMessageAnalyzers, &matchUpAnalyzer)
 }
 
 func initializeDatabaseConnection() {
@@ -34,8 +38,23 @@ func Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	}
 }
 
+func AnalyzeMessage(playerAName string, playerBName string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, playerAScore int, playerBScore int, source string) {
+	playerADeck.RemoveAlias(environment)
+	playerBDeck.RemoveAlias(environment)
+	playerADeck.SeparateExFromMainFromCache(environment)
+	playerBDeck.SeparateExFromMainFromCache(environment)
+	playerADeck.Classify()
+	playerBDeck.Classify()
+	for _, analyzer := range onlineMessageAnalyzers {
+		analyzer.Analyze(playerAName, playerBName, source, playerADeck, playerBDeck, analyzers.JudgeWinLose(playerAScore, playerBScore))
+	}
+}
+
 func Push() {
 	for _, analyzer := range onlineAnalyzers {
+		analyzer.Push(db)
+	}
+	for _, analyzer := range onlineMessageAnalyzers {
 		analyzer.Push(db)
 	}
 }

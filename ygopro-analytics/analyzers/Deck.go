@@ -2,11 +2,8 @@ package analyzers
 
 import (
 	"bytes"
-	"encoding/json"
 	"github.com/go-pg/pg"
 	"github.com/iamipanda/ygopro-data"
-	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,11 +17,6 @@ type DeckAnalyzer struct {
 	tagCache sync.Map
 	DeckIdentifierHost string
 	UnknownDecks []unknownDeckDetail
-}
-
-type deckInfo struct {
-	Deck string
-	Tag []string
 }
 
 type unknownDeckDetail struct {
@@ -70,7 +62,7 @@ func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) 
 
 func (analyzer *DeckAnalyzer) Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	ch := make(chan *deckInfo)
-	go analyzer.fetchDeckInfo(deck, ch)
+	go fetchDeckInfo(analyzer.DeckIdentifierHost, deck, ch)
 	info := <- ch
 	if info.Deck == "迷之卡组" {
 		analyzer.UnknownDecks = append(analyzer.UnknownDecks, unknownDeckDetail{deck, source, playerName, time.Now()})
@@ -78,23 +70,11 @@ func (analyzer *DeckAnalyzer) Analyze(deck *ygopro_data.Deck, source string, pla
 	analyzer.addDeckInfoToCache(source, info)
 }
 
-func (analyzer *DeckAnalyzer) fetchDeckInfo(deck *ygopro_data.Deck, channel chan *deckInfo) {
-	resp, err := http.PostForm(analyzer.DeckIdentifierHost, url.Values{ "deck": { deck.ToYdk() } })
-	var info deckInfo
-	if err != nil {
-		Logger.Warningf("Deck Analyzer failed fetching identifier header: %v\n", err)
-		info.Deck = "No name due to network"
-		channel <- &info
-		return
+func (analyzer *DeckAnalyzer) AnalyzeWithInfo(deck *ygopro_data.Deck, info *deckInfo, source string, playerName string) {
+	if info.Deck == "迷之卡组" {
+		analyzer.UnknownDecks = append(analyzer.UnknownDecks, unknownDeckDetail{deck, source, playerName, time.Now()})
 	}
-	decoder := json.NewDecoder(resp.Body)
-	if err = decoder.Decode(&info); err != nil {
-		Logger.Warningf("Deck Analyzer failed fetching identifier content: %v\n", err)
-		info.Deck = "No name due to parsing"
-		channel <- &info
-		return
-	}
-	channel <- &info
+	analyzer.addDeckInfoToCache(source, info)
 }
 
 func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
