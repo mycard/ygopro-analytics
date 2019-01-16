@@ -23,6 +23,7 @@ type deckInfo struct {
 
 type AnalyzerWithDeckInfo interface {
 	AnalyzeWithInfo(deck *ygopro_data.Deck, info *deckInfo, source string, playerName string)
+	Push(db *pg.DB)
 }
 
 var Logger *logging.Logger

@@ -139,4 +139,8 @@ func (analyzer *MatchUpAnalyzer) Push(db *pg.DB) {
 			Logger.Errorf("Deck Analyzer failed pushing match-up information to database: %v\n", err)
 		}
 	}
+
+	for _, nextAnalyzer := range analyzer.Next {
+		nextAnalyzer.Push(db)
+	}
 }
