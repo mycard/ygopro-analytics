@@ -4,19 +4,21 @@ import (
 	"github.com/iamipanda/ygopro-data"
 	"./analyzers"
 	"github.com/go-pg/pg"
+	"strings"
 )
 
 var onlineAnalyzers = make([]analyzers.Analyzer, 0)
 var onlineMessageAnalyzers = make([]analyzers.MessageAnalyzer, 0)
 var environment *ygopro_data.Environment
 var db *pg.DB
+var deckAnalyzer analyzers.DeckAnalyzer
 
 func initializeAnalyzers() {
 	environment = ygopro_data.GetEnvironment("zh-CN")
 	environment.LoadAllCards()
 	countAnalyzer := analyzers.NewCountAnalyzer()
 	singleAnalyzer := analyzers.NewSingleCardAnalyzer(environment)
-	deckAnalyzer := analyzers.NewDeckAnalyzer(Config.DeckIdentifierHost)
+	deckAnalyzer = analyzers.NewDeckAnalyzer(Config.DeckIdentifierHost)
 	onlineAnalyzers = append(onlineAnalyzers, &countAnalyzer)
 	onlineAnalyzers = append(onlineAnalyzers, &singleAnalyzer)
 	// onlineAnalyzers = append(onlineAnalyzers, &deckAnalyzer)
@@ -35,6 +37,9 @@ func Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	deck.Classify()
 	for _, analyzer := range onlineAnalyzers {
 		analyzer.Analyze(deck, source, playerName)
+	}
+	if !strings.HasPrefix(source, "mycard") {
+		deckAnalyzer.Analyze(deck, source, playerName)
 	}
 }
 
