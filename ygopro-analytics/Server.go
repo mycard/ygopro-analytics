@@ -63,6 +63,13 @@ func StartServer() {
 	})
 
 	router.POST("/reload", func(context *gin.Context) {
+		Logger.Info("Reloading database.")
+		ygopro_data.LoadAllEnvironmentCards()
+		context.String(200, "ok")
+	})
+
+	router.PATCH("/reload", func(context *gin.Context) {
+		Logger.Info("Reloading database.")
 		ygopro_data.LoadAllEnvironmentCards()
 		context.String(200, "ok")
 	})
