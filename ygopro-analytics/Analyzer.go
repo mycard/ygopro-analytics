@@ -44,6 +44,9 @@ func Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 }
 
 func AnalyzeMessage(playerAName string, playerBName string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, playerAScore int, playerBScore int, source string) {
+	if playerAScore == -5 || playerBScore == -5 {
+		return
+	}
 	playerADeck.RemoveAlias(environment)
 	playerBDeck.RemoveAlias(environment)
 	playerADeck.SeparateExFromMainFromCache(environment)
