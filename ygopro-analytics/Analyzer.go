@@ -47,6 +47,10 @@ func AnalyzeMessage(playerAName string, playerBName string, playerADeck *ygopro_
 	if playerAScore == -5 || playerBScore == -5 {
 		return
 	}
+	// not strict.
+	if len(playerADeck.Main) == 0|| len(playerBDeck.Main) == 0 {
+		return
+	}
 	playerADeck.RemoveAlias(environment)
 	playerBDeck.RemoveAlias(environment)
 	playerADeck.SeparateExFromMainFromCache(environment)
