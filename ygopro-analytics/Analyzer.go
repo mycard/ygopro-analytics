@@ -24,6 +24,9 @@ func initializeAnalyzers() {
 	// onlineAnalyzers = append(onlineAnalyzers, &deckAnalyzer)
 	matchUpAnalyzer := analyzers.NewMatchUpAnalyzer(Config.DeckIdentifierHost)
 	matchUpAnalyzer.Next = append(matchUpAnalyzer.Next, &deckAnalyzer)
+	matchUpAnalyzer.Transformer = func(source *string) {
+		*source = "mycard-" + *source
+	}
 	onlineMessageAnalyzers = append(onlineMessageAnalyzers, &matchUpAnalyzer)
 }
 

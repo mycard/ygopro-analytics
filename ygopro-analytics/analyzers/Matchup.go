@@ -10,14 +10,17 @@ import (
 	"time"
 )
 
+type SourceTransformer func(*string)
+
 type MatchUpAnalyzer struct {
 	matchCache sync.Map // map[string]*map[matchUp]*matchUpResult
 	Next []AnalyzerWithDeckInfo
 	IdentifierHost string
+	Transformer SourceTransformer
 }
 
 func NewMatchUpAnalyzer(IdentifierHost string) MatchUpAnalyzer {
-	return MatchUpAnalyzer{sync.Map{}, make([]AnalyzerWithDeckInfo, 0), IdentifierHost}
+	return MatchUpAnalyzer{sync.Map{}, make([]AnalyzerWithDeckInfo, 0), IdentifierHost, nil}
 }
 
 type matchUp struct {
@@ -70,6 +73,9 @@ func (analyzer *MatchUpAnalyzer) Analyze(playerAName string, playerBName string,
 		result.draw += drawNumber
 	}
 	// pass to next
+	if analyzer.Transformer != nil {
+		analyzer.Transformer(&source)
+	}
 	for _, nextAnalyzer := range analyzer.Next {
 		nextAnalyzer.AnalyzeWithInfo(playerADeck, playerADeckInfo, source, playerAName)
 		nextAnalyzer.AnalyzeWithInfo(playerBDeck, playerBDeckInfo, source, playerBName)
