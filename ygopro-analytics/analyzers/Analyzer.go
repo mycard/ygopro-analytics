@@ -12,7 +12,7 @@ type Analyzer interface {
 }
 
 type MessageAnalyzer interface {
-	Analyze(playerAName string, playerBName string, source string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, winner int)
+	Analyze(playerAName string, playerBName string, source string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, winner int, first []string)
 	Push(db *pg.DB)
 }
 

@@ -29,11 +29,7 @@ type matchUp struct {
 }
 
 func newMatchUp(deckA string, deckB string) (m matchUp) {
-	if deckA < deckB {
-		return matchUp{deckA, deckB}
-	} else {
-		return matchUp{deckB, deckA}
-	}
+	return matchUp{ deckA, deckB }
 }
 
 type matchUpResult struct {
@@ -42,7 +38,7 @@ type matchUpResult struct {
 	 draw int
 }
 
-func (analyzer *MatchUpAnalyzer) Analyze(playerAName string, playerBName string, source string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, winner int) {
+func (analyzer *MatchUpAnalyzer) Analyze(playerAName string, playerBName string, source string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, winner int, first []string) {
 	var matchCacheTarget *sync.Map
 	if untypedMatchCacheTarget, ok := analyzer.matchCache.Load(source); !ok {
 		matchCacheTarget = &sync.Map{}
@@ -59,7 +55,12 @@ func (analyzer *MatchUpAnalyzer) Analyze(playerAName string, playerBName string,
 	// win/lose switch
 	if playerADeckInfo.Deck == playerBDeckInfo.Deck {
 		winner = 0
-	} else if playerADeckInfo.Deck > playerBDeckInfo.Deck {
+	} else if len(first) == 0 {
+		winner = 0
+	} else if first[0] != playerAName {
+		tmp := playerADeckInfo
+		playerADeckInfo = playerBDeckInfo
+		playerBDeckInfo = tmp
 		winner *= -1
 	}
 	_matchUp := newMatchUp(playerADeckInfo.Deck, playerBDeckInfo.Deck)
@@ -77,7 +78,6 @@ func (analyzer *MatchUpAnalyzer) Analyze(playerAName string, playerBName string,
 		analyzer.Transformer(&source)
 	}
 	for _, nextAnalyzer := range analyzer.Next {
-		nextAnalyzer.AnalyzeWithInfo(playerADeck, playerADeckInfo, source, playerAName)
 		nextAnalyzer.AnalyzeWithInfo(playerBDeck, playerBDeckInfo, source, playerBName)
 	}
 }
