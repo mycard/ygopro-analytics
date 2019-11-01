@@ -2,6 +2,7 @@ package ygopro_analytics
 
 import (
 	"./analyzers"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/iamipanda/ygopro-data"
 	"github.com/op/go-logging"
@@ -49,6 +50,9 @@ func StartServer() {
 		deckBString := context.DefaultPostForm("userdeckB", "")
 		playerAName := context.DefaultPostForm("usernameA", "Unknown")
 		playerBName := context.DefaultPostForm("usernameB", "Unknown")
+		firstList := context.DefaultPostForm("first", "[]")
+		var first []string
+		json.Unmarshal([]byte(firstList), &first)
 		deckA := ygopro_data.LoadYdkFromString(deckAString)
 		deckB := ygopro_data.LoadYdkFromString(deckBString)
 		playerAScore, errA := strconv.Atoi(context.DefaultPostForm("userscoreA", "-5"))
@@ -58,7 +62,7 @@ func StartServer() {
 			context.String(504, "wrong score message")
 			return
 		}
-		AnalyzeMessage(playerAName, playerBName, &deckA, &deckB, playerAScore, playerBScore, source)
+		AnalyzeMessage(playerAName, playerBName, &deckA, &deckB, playerAScore, playerBScore, source, first)
 		context.String(200, "analyzing")
 	})
 

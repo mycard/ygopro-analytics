@@ -46,12 +46,12 @@ func Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	}
 }
 
-func AnalyzeMessage(playerAName string, playerBName string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, playerAScore int, playerBScore int, source string) {
+func AnalyzeMessage(playerAName string, playerBName string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, playerAScore int, playerBScore int, source string, first []string) {
 	if playerAScore == -5 || playerBScore == -5 {
 		return
 	}
 	// not strict.
-	if len(playerADeck.Main) == 0|| len(playerBDeck.Main) == 0 {
+	if len(playerADeck.Main) == 0 || len(playerBDeck.Main) == 0 {
 		return
 	}
 	playerADeck.RemoveAlias(environment)
@@ -61,7 +61,7 @@ func AnalyzeMessage(playerAName string, playerBName string, playerADeck *ygopro_
 	playerADeck.Classify()
 	playerBDeck.Classify()
 	for _, analyzer := range onlineMessageAnalyzers {
-		analyzer.Analyze(playerAName, playerBName, source, playerADeck, playerBDeck, analyzers.JudgeWinLose(playerAScore, playerBScore))
+		analyzer.Analyze(playerAName, playerBName, source, playerADeck, playerBDeck, analyzers.JudgeWinLose(playerAScore, playerBScore), first)
 	}
 }
 
