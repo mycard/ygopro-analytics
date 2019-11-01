@@ -7,27 +7,30 @@ import (
 	"bytes"
 	"strings"
 	"strconv"
+	"sync"
 )
 
 type SingleCardAnalyzer struct {
-	cache map[string]singleCardSourceData
+	// cache map[string]singleCardSourceData
+	cache sync.Map
 	environment *ygopro_data.Environment
 }
 
 func NewSingleCardAnalyzer(environment *ygopro_data.Environment) SingleCardAnalyzer {
-	return SingleCardAnalyzer{make(map[string]singleCardSourceData), environment}
+	return SingleCardAnalyzer{sync.Map{}, environment}
 }
 
 type singleCardSourceData struct{
-	monster map[int]*singleCardData
-	spell map[int]*singleCardData
-	trap map[int]*singleCardData
-	side map[int]*singleCardData
-	ex map[int]*singleCardData
+	// monster map[int]*singleCardData
+	monster sync.Map
+	spell sync.Map
+	trap sync.Map
+	side sync.Map
+	ex sync.Map
 }
 
 func newSingleCardSourceData() singleCardSourceData {
-	return singleCardSourceData{make(map[int]*singleCardData), make(map[int]*singleCardData), make(map[int]*singleCardData), make(map[int]*singleCardData), make(map[int]*singleCardData)}
+	return singleCardSourceData{sync.Map{}, sync.Map{}, sync.Map{}, sync.Map{}, sync.Map{}}
 }
 
 type singleCardData struct {
@@ -39,12 +42,14 @@ type singleCardData struct {
 	putoverthree int
 }
 
-func addSingleCardDataTo(target *map[int]*singleCardData, id int, count int) {
+// target *map[int]*singleCardData
+func addSingleCardDataTo(target *sync.Map, id int, count int) {
 	var data *singleCardData
-	var ok bool
-	if data, ok = (*target)[id]; !ok {
+	if untypeData, ok := (*target).Load(id); !ok {
 		data = &singleCardData{0,0,0,0,0,0}
-		(*target)[id] = data
+		(*target).Store(id, data)
+	} else {
+		data = untypeData.(*singleCardData)
 	}
 	switch count {
 	case 0:
@@ -62,12 +67,14 @@ func addSingleCardDataTo(target *map[int]*singleCardData, id int, count int) {
 	data.frequency += count
 }
 
-func (analyzer *SingleCardAnalyzer) Analyze(deck *ygopro_data.Deck, source string) {
-	var target singleCardSourceData
-	var ok bool
-	if target, ok = analyzer.cache[source]; !ok {
-		target = newSingleCardSourceData()
-		analyzer.cache[source] = target
+func (analyzer *SingleCardAnalyzer) Analyze(deck *ygopro_data.Deck, source string, playerName string) {
+	var target *singleCardSourceData
+	if untypedTarget, ok := analyzer.cache.Load(source); !ok {
+		obj := newSingleCardSourceData()
+		target = &obj
+		analyzer.cache.Store(source, target)
+	} else {
+		target = untypedTarget.(*singleCardSourceData)
 	}
 	for id, count := range deck.ClassifiedMain {
 		if card, ok := analyzer.environment.Cards[id]; ok {
@@ -92,20 +99,23 @@ func (analyzer *SingleCardAnalyzer) Push(db *pg.DB) {
 	var buffer bytes.Buffer
 	originData := make([]string, 0)
 	currentTime := time.Now().Format("2006-01-02")
-	for source, sourceData := range analyzer.cache {
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "monster", sourceData.monster))
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "spell", sourceData.spell))
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "trap", sourceData.trap))
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "side", sourceData.side))
-		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "ex", sourceData.ex))
-	}
+	analyzer.cache.Range(func(untypedSource, untypedSourceData interface{}) bool {
+		source := untypedSource.(string)
+		sourceData := untypedSourceData.(*singleCardSourceData)
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "monster", &sourceData.monster))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "spell", &sourceData.spell))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "trap", &sourceData.trap))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "side", &sourceData.side))
+		originData = append(originData, generateSingleCardSourceSQL(source, currentTime, "ex", &sourceData.ex))
+		return true
+	})
 	data := make([]string, 0)
 	for _, item := range originData {
 		if len(item) > 0 {
 			data = append(data, item)
 		}
 	}
-	analyzer.cache = make(map[string]singleCardSourceData)
+	analyzer.cache = sync.Map{}
 	if len(data) == 0 {
 		return
 	}
@@ -115,17 +125,23 @@ func (analyzer *SingleCardAnalyzer) Push(db *pg.DB) {
 		"frequency = single.frequency + excluded.frequency, numbers = single.numbers + excluded.numbers, " +
 		"putone = single.putone + excluded.putone, puttwo = single.puttwo + excluded.puttwo, " +
 		"putthree = single.putthree + excluded.putthree, putoverthree = single.putoverthree + excluded.putoverthree")
-	if _, err := db.Exec(buffer.String()); err != nil {
+	sql := buffer.String()
+	Logger.Debugf("Single sql exec: %v", sql)
+	if _, err := db.Exec(sql); err != nil {
 		Logger.Errorf("Single Analyzer failed pushing to database: %v\n", err)
 	}
 }
 
-func generateSingleCardSourceSQL(source string, time string, category string, target map[int]*singleCardData) string {
+// target map[int]*singleCardData
+func generateSingleCardSourceSQL(source string, time string, category string, target *sync.Map) string {
 	value := make([]string, 0)
 	var buffer bytes.Buffer
-	for id, data := range target {
+	target.Range(func(untypedId, untypedData interface{}) bool {
+		id := untypedId.(int)
+		data := untypedData.(*singleCardData)
 		value = append(value, generateSingleCardDataValueSQL(source, id, category, time, data, buffer))
-	}
+		return true
+	})
 	return strings.Join(value, ", ")
 }
 
