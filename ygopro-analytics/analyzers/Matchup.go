@@ -52,6 +52,7 @@ func (analyzer *MatchUpAnalyzer) Analyze(playerAName string, playerBName string,
 	go fetchDeckInfo(analyzer.IdentifierHost, playerADeck, channelA)
 	go fetchDeckInfo(analyzer.IdentifierHost, playerBDeck, channelB)
 	playerADeckInfo, playerBDeckInfo := <-channelA, <-channelB
+	Logger.Debugf("%s(%s) vs %s(%s) win %v/%v", playerAName, playerADeckInfo.Deck, playerBName, playerBDeckInfo.Deck, winner, len(first))
 	// win/lose switch
 	if playerADeckInfo.Deck == playerBDeckInfo.Deck {
 		winner = MATCH_RESULT_PLAYERS_DRAW
