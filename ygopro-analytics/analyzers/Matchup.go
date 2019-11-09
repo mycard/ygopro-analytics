@@ -54,9 +54,9 @@ func (analyzer *MatchUpAnalyzer) Analyze(playerAName string, playerBName string,
 	playerADeckInfo, playerBDeckInfo := <-channelA, <-channelB
 	// win/lose switch
 	if playerADeckInfo.Deck == playerBDeckInfo.Deck {
-		winner = 0
+		winner = MATCH_RESULT_PLAYERS_DRAW
 	} else if len(first) == 0 {
-		winner = 0
+		winner = MATCH_RESULT_PLAYERS_DROP
 	} else if first[0] != playerAName {
 		tmp := playerADeckInfo
 		playerADeckInfo = playerBDeckInfo
