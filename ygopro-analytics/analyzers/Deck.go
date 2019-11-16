@@ -51,6 +51,9 @@ func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) 
 		deckCacheTarget.Store(info.Deck, 1)
 	}
 	for _, tag := range info.Tag {
+		if len(tag) == 0 {
+			continue
+		}
 		tag = info.Deck + "-" + tag
 		if untypedCount, ok := tagCacheTarget.Load(tag); ok {
 			tagCacheTarget.Store(tag, untypedCount.(int) + 1)
