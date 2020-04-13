@@ -41,7 +41,7 @@ func Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	for _, analyzer := range onlineAnalyzers {
 		analyzer.Analyze(deck, source, playerName)
 	}
-	if !strings.HasPrefix(source, "mycard") {
+	if source != "mycard-athletic" && source != "mycard-entertain" {
 		deckAnalyzer.Analyze(deck, source, playerName)
 	}
 }
