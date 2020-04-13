@@ -4,7 +4,6 @@ import (
 	"github.com/iamipanda/ygopro-data"
 	"./analyzers"
 	"github.com/go-pg/pg"
-	"strings"
 )
 
 var onlineAnalyzers = make([]analyzers.Analyzer, 0)
