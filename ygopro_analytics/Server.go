@@ -1,13 +1,14 @@
 package ygopro_analytics
 
 import (
-	"./analyzers"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/iamipanda/ygopro-data"
-	"github.com/op/go-logging"
+	"main/ygopro_analytics/analyzers"
 	"os"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	ygopro_data "github.com/iamipanda/ygopro-data"
+	"github.com/op/go-logging"
 )
 
 func Initialize() {

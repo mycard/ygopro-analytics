@@ -1,7 +1,8 @@
 package main
 
 import (
-	"./ygopro-analytics"
+	"main/ygopro_analytics"
+
 	"github.com/jasonlvhit/gocron"
 )
 

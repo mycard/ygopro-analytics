@@ -1,9 +1,10 @@
 package ygopro_analytics
 
 import (
-	"github.com/iamipanda/ygopro-data"
-	"./analyzers"
+	"main/ygopro_analytics/analyzers"
+
 	"github.com/go-pg/pg"
+	ygopro_data "github.com/iamipanda/ygopro-data"
 )
 
 var onlineAnalyzers = make([]analyzers.Analyzer, 0)
