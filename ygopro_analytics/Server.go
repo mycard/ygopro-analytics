@@ -79,6 +79,8 @@ func StartServer() {
 		context.String(200, "ok")
 	})
 
+	router.GET("/ws_deck", WebsocketMain)
+
 	router.Run(":8081")
 }
 
