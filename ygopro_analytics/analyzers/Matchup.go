@@ -79,6 +79,7 @@ func (analyzer *MatchUpAnalyzer) Analyze(playerAName string, playerBName string,
 		analyzer.Transformer(&source)
 	}
 	for _, nextAnalyzer := range analyzer.Next {
+		nextAnalyzer.AnalyzeWithInfo(playerADeck, playerADeckInfo, source, playerAName)
 		nextAnalyzer.AnalyzeWithInfo(playerBDeck, playerBDeckInfo, source, playerBName)
 	}
 }
@@ -94,7 +95,7 @@ func winLoseNumberAccordingToWinner(winner int) (winNumber int, loseNumber int, 
 	case MATCH_RESULT_PLAYERS_DROP:
 		return 0,0,0
 	default:
-		return 0,0, 0
+		return 0,0,0
 	}
 }
 
