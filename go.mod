@@ -3,7 +3,7 @@ module main
 go 1.13
 
 require (
-	github.com/gin-gonic/gin v1.6.3
+	github.com/gin-gonic/gin v1.7.0
 	github.com/go-pg/pg v8.0.6+incompatible
 	github.com/gorilla/websocket v1.4.2
 	github.com/iamipanda/ygopro-data v0.0.0-20190116110429-360968dc5c66
@@ -12,6 +12,5 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
-	github.com/satori/go.uuid v1.2.0 // indirect
 	mellium.im/sasl v0.2.1 // indirect
 )
