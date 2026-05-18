@@ -10,13 +10,17 @@ import (
 type Configuration struct {
 	Postgres           pg.Options
 	DeckIdentifierHost string
-	DatabasePath       string
+	DatabasePath       []string
 }
 
 var Config Configuration
 
 func initializeConfig() {
-	file, err := os.Open("./ygopro_analytics/Config.json")
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "./Config.json"
+	}
+	file, err := os.Open(configPath)
 	if err != nil {
 		Logger.Errorf("Failed to open Config.json. %v", err)
 		return

@@ -2,32 +2,31 @@ package analyzers
 
 import (
 	"bytes"
-	"github.com/go-pg/pg"
-	"github.com/iamipanda/ygopro-data"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/go-pg/pg"
+	ygopro_data "github.com/iamipanda/ygopro-data"
 )
 
-// deckCache map[string]map[string]int
-// tagCache map[string]map[string]int
 type DeckAnalyzer struct {
-	deckCache sync.Map
-	tagCache sync.Map
+	deckCache          sync.Map // deckCache map[string]map[string]int
+	tagCache           sync.Map // tagCache map[string]map[string]int
 	DeckIdentifierHost string
-	UnknownDecks []unknownDeckDetail
+	UnknownDecks       []unknownDeckDetail
 }
 
 type unknownDeckDetail struct {
-	Deck *ygopro_data.Deck
+	Deck   *ygopro_data.Deck
 	Source string
-	User string
-	Time time.Time
+	User   string
+	Time   time.Time
 }
 
 func NewDeckAnalyzer(deckIdentifierHost string) DeckAnalyzer {
-	return DeckAnalyzer { sync.Map{}, sync.Map{}, deckIdentifierHost, make([]unknownDeckDetail, 0) }
+	return DeckAnalyzer{sync.Map{}, sync.Map{}, deckIdentifierHost, make([]unknownDeckDetail, 0)}
 }
 
 func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) {
@@ -46,7 +45,7 @@ func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) 
 		tagCacheTarget = untypedTagCacheTarget.(*sync.Map)
 	}
 	if untypedCount, ok := deckCacheTarget.Load(info.Deck); ok {
-		deckCacheTarget.Store(info.Deck, untypedCount.(int) + 1)
+		deckCacheTarget.Store(info.Deck, untypedCount.(int)+1)
 	} else {
 		deckCacheTarget.Store(info.Deck, 1)
 	}
@@ -56,7 +55,7 @@ func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) 
 		}
 		tag = info.Deck + "-" + tag
 		if untypedCount, ok := tagCacheTarget.Load(tag); ok {
-			tagCacheTarget.Store(tag, untypedCount.(int) + 1)
+			tagCacheTarget.Store(tag, untypedCount.(int)+1)
 		} else {
 			tagCacheTarget.Store(tag, 1)
 		}
@@ -66,7 +65,7 @@ func (analyzer *DeckAnalyzer) addDeckInfoToCache(source string, info *deckInfo) 
 func (analyzer *DeckAnalyzer) Analyze(deck *ygopro_data.Deck, source string, playerName string) {
 	ch := make(chan *deckInfo)
 	go fetchDeckInfo(analyzer.DeckIdentifierHost, deck, ch)
-	info := <- ch
+	info := <-ch
 	if info.Deck == "迷之卡组" {
 		analyzer.UnknownDecks = append(analyzer.UnknownDecks, unknownDeckDetail{deck, source, playerName, time.Now()})
 	}
@@ -180,5 +179,3 @@ func (analyzer *DeckAnalyzer) Push(db *pg.DB) {
 		}
 	}
 }
-
-

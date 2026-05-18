@@ -1,6 +1,7 @@
 package ygopro_analytics
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"main/ygopro_analytics/analyzers"
 	"os"
@@ -13,8 +14,12 @@ import (
 
 func Initialize() {
 	initializeConfig()
-	ygopro_data.DatabasePath = Config.DatabasePath
-	ygopro_data.InitializeStaticEnvironment()
+	ygopro_data.DatabasePath = Config.DatabasePath[0]
+	if len(Config.DatabasePath) > 1 {
+		for _, path := range Config.DatabasePath[1:] {
+			ygopro_data.GetEnvironment("zh-CN").AppendFolder(path)
+		}
+	}
 	initializeLogger()
 	initializeAnalyzers()
 	initializeDatabaseConnection()
@@ -41,30 +46,49 @@ func StartServer() {
 		deckString := context.DefaultPostForm("deck", "")
 		playerName := context.DefaultPostForm("playername", "Unknown")
 		deck := ygopro_data.LoadYdkFromString(deckString)
-		Analyze(&deck, source, playerName)
-		context.String(200, "analyzing")
+		AnalyzeDeck(&deck, source, playerName)
+		context.String(200, "analyzed")
 	})
 
 	router.POST("/message", func(context *gin.Context) {
-		source := context.DefaultPostForm("arena", "unknown")
-		deckAString := context.DefaultPostForm("userdeckA", "")
-		deckBString := context.DefaultPostForm("userdeckB", "")
-		playerAName := context.DefaultPostForm("usernameA", "Unknown")
-		playerBName := context.DefaultPostForm("usernameB", "Unknown")
+		report := analyzers.MatchReport{}
+		report.Arena = context.DefaultPostForm("arena", "unknown")
+		report.UsernameA = context.DefaultPostForm("usernameA", "Unknown")
+		report.UsernameB = context.DefaultPostForm("usernameB", "Unknown")
+		report.UserdeckA = ygopro_data.LoadYdkFromString(context.DefaultPostForm("userdeckA", ""))
+		report.UserdeckB = ygopro_data.LoadYdkFromString(context.DefaultPostForm("userdeckB", ""))
+		report.UserscoreA, _ = strconv.Atoi(context.DefaultPostForm("userscoreA", "-5"))
+		report.UserscoreB, _ = strconv.Atoi(context.DefaultPostForm("userscoreB", "-5"))
+
 		firstList := context.DefaultPostForm("first", "[]")
 		var first []string
 		json.Unmarshal([]byte(firstList), &first)
-		deckA := ygopro_data.LoadYdkFromString(deckAString)
-		deckB := ygopro_data.LoadYdkFromString(deckBString)
-		playerAScore, errA := strconv.Atoi(context.DefaultPostForm("userscoreA", "-5"))
-		playerBScore, errB := strconv.Atoi(context.DefaultPostForm("userscoreB", "-5"))
-		if errA != nil || errB != nil {
-			Logger.Warning("Can't recognize score message.")
-			context.String(504, "wrong score message")
-			return
+		report.First = first
+
+		winsList := context.DefaultPostForm("wins", "[]")
+		var wins []string
+		json.Unmarshal([]byte(winsList), &wins)
+		report.Wins = wins
+
+		replaysList := context.DefaultPostForm("replays", "[]")
+		var replaysBase64 []string
+		json.Unmarshal([]byte(replaysList), &replaysBase64)
+		for _, b64 := range replaysBase64 {
+			raw, err := base64.StdEncoding.DecodeString(b64)
+			if err != nil {
+				Logger.Warningf("Failed to decode replay base64: %v", err)
+				continue
+			}
+			replay, err := ygopro_data.ReadReplayFromBytes(raw)
+			if err != nil {
+				Logger.Warningf("Failed to parse replay: %v", err)
+				continue
+			}
+			report.Replays = append(report.Replays, *replay)
 		}
-		AnalyzeMessage(playerAName, playerBName, &deckA, &deckB, playerAScore, playerBScore, source, first)
-		context.String(200, "analyzing")
+
+		AnalyzeMatch(report)
+		context.String(200, "analyzed")
 	})
 
 	router.POST("/reload", func(context *gin.Context) {
@@ -78,8 +102,6 @@ func StartServer() {
 		ygopro_data.LoadAllEnvironmentCards()
 		context.String(200, "ok")
 	})
-
-	router.GET("/ws_deck", WebsocketMain)
 
 	router.Run(":8081")
 }

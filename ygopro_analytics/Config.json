@@ -1,9 +1,0 @@
-{
-  "Postgres": {
-    "User":     "postgres",
-    "Password": "",
-    "Database": "postgres"
-  },
-  "DatabasePath": "/Users/iami/Programming/mycard/ygopro-database",
-  "DeckIdentifierHost": "https://api.mycard.moe/ygopro/identifier/production"
-}

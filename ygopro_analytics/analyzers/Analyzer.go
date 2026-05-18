@@ -1,29 +1,44 @@
 package analyzers
 
 import (
-	"github.com/iamipanda/ygopro-data"
 	"github.com/go-pg/pg"
+	ygopro_data "github.com/iamipanda/ygopro-data"
 	"github.com/op/go-logging"
 )
 
-type Analyzer interface {
+type DeckMessageAnalyzer interface {
 	Analyze(deck *ygopro_data.Deck, source string, playerName string)
 	Push(db *pg.DB)
 }
 
-type MessageAnalyzer interface {
-	Analyze(playerAName string, playerBName string, source string, playerADeck *ygopro_data.Deck, playerBDeck *ygopro_data.Deck, winner int, first []string)
+type MatchReportAnalyzer interface {
+	Analyze(report *MatchReport)
 	Push(db *pg.DB)
 }
 
 type deckInfo struct {
 	Deck string
-	Tag []string
+	Tag  []string
 }
 
-type AnalyzerWithDeckInfo interface {
-	AnalyzeWithInfo(deck *ygopro_data.Deck, info *deckInfo, source string, playerName string)
-	Push(db *pg.DB)
+type MatchReport struct {
+	AccessKey        string
+	UsernameA        string
+	UsernameB        string
+	UserscoreA       int
+	UserscoreB       int
+	UserdeckA        ygopro_data.Deck
+	UserdeckB        ygopro_data.Deck
+	UserdeckAHistory []ygopro_data.Deck
+	UserdeckBHistory []ygopro_data.Deck
+	First            []string
+	Wins             []string
+	Replays          []ygopro_data.Replay
+	Start            string
+	End              string
+	Arena            string
+	DeckInfoA        *deckInfo
+	DeckInfoB        *deckInfo
 }
 
 var Logger *logging.Logger
