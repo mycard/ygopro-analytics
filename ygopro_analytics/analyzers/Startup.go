@@ -78,11 +78,13 @@ func (analyzer *StartupAnalyzer) Analyze(report *MatchReport) {
 		aFirst := report.First[i] == nameA
 		bFirst := report.First[i] == nameB
 
+		hostStart := len(replay.HostDeck.Main) - replay.StartHand
+		clientStart := len(replay.ClientDeck.Main) - replay.StartHand
 		for j := 0; j < replay.StartHand; j++ {
-			analyzer.recordStartupCard(startupSourceData, replay.HostDeck.Main[j], aWon, isDraw, aFirst)
-			analyzer.recordStartupCard(startupSourceData, replay.ClientDeck.Main[j], bWon, isDraw, bFirst)
-			analyzer.recordCatchupCard(catchupSourceData, replay.HostDeck.Main[j], aWon, isDraw, bDeck)
-			analyzer.recordCatchupCard(catchupSourceData, replay.ClientDeck.Main[j], bWon, isDraw, aDeck)
+			analyzer.recordStartupCard(startupSourceData, replay.HostDeck.Main[hostStart+j], aWon, isDraw, aFirst)
+			analyzer.recordStartupCard(startupSourceData, replay.ClientDeck.Main[clientStart+j], bWon, isDraw, bFirst)
+			analyzer.recordCatchupCard(catchupSourceData, replay.HostDeck.Main[hostStart+j], aWon, isDraw, bDeck)
+			analyzer.recordCatchupCard(catchupSourceData, replay.ClientDeck.Main[clientStart+j], bWon, isDraw, aDeck)
 		}
 	}
 }
