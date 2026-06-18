@@ -63,6 +63,10 @@ func AnalyzeMatch(report analyzers.MatchReport) {
 	report.UserdeckB.SeparateExFromMainFromCache(environment)
 	report.UserdeckA.Classify()
 	report.UserdeckB.Classify()
+	for i := range report.Replays {
+		report.Replays[i].HostDeck.RemoveAlias(environment)
+		report.Replays[i].ClientDeck.RemoveAlias(environment)
+	}
 	for _, analyzer := range onlineMessageAnalyzers {
 		analyzer.Analyze(&report)
 	}

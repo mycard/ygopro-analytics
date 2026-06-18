@@ -20,9 +20,12 @@ func NewStartupAnalyzer() StartupAnalyzer {
 }
 
 type startupResult struct {
-	win  int
-	lose int
-	draw int
+	win   int
+	lose  int
+	draw  int
+	nWin  int
+	nLose int
+	nDraw int
 }
 
 type startupCacheKey struct {
@@ -80,16 +83,20 @@ func (analyzer *StartupAnalyzer) Analyze(report *MatchReport) {
 
 		hostStart := len(replay.HostDeck.Main) - replay.StartHand
 		clientStart := len(replay.ClientDeck.Main) - replay.StartHand
-		for j := 0; j < replay.StartHand; j++ {
-			analyzer.recordStartupCard(startupSourceData, replay.HostDeck.Main[hostStart+j], aWon, isDraw, aFirst)
-			analyzer.recordStartupCard(startupSourceData, replay.ClientDeck.Main[clientStart+j], bWon, isDraw, bFirst)
-			analyzer.recordCatchupCard(catchupSourceData, replay.HostDeck.Main[hostStart+j], aWon, isDraw, bDeck)
-			analyzer.recordCatchupCard(catchupSourceData, replay.ClientDeck.Main[clientStart+j], bWon, isDraw, aDeck)
+		for j := 0; j < len(replay.HostDeck.Main); j++ {
+			inHand := j >= hostStart
+			analyzer.recordStartupCard(startupSourceData, replay.HostDeck.Main[j], aWon, isDraw, aFirst, inHand)
+			analyzer.recordCatchupCard(catchupSourceData, replay.HostDeck.Main[j], aWon, isDraw, bDeck, inHand)
+		}
+		for j := 0; j < len(replay.ClientDeck.Main); j++ {
+			inHand := j >= clientStart
+			analyzer.recordStartupCard(startupSourceData, replay.ClientDeck.Main[j], bWon, isDraw, bFirst, inHand)
+			analyzer.recordCatchupCard(catchupSourceData, replay.ClientDeck.Main[j], bWon, isDraw, aDeck, inHand)
 		}
 	}
 }
 
-func (analyzer *StartupAnalyzer) recordStartupCard(sourceData *sync.Map, cardID int, won bool, draw bool, first bool) {
+func (analyzer *StartupAnalyzer) recordStartupCard(sourceData *sync.Map, cardID int, won bool, isDraw bool, first bool, inHand bool) {
 	key := startupCacheKey{cardID, first}
 	var data *startupResult
 	if untypedData, ok := sourceData.Load(key); !ok {
@@ -98,16 +105,10 @@ func (analyzer *StartupAnalyzer) recordStartupCard(sourceData *sync.Map, cardID 
 	} else {
 		data = untypedData.(*startupResult)
 	}
-	if draw {
-		data.draw++
-	} else if won {
-		data.win++
-	} else {
-		data.lose++
-	}
+	applyResult(data, won, isDraw, inHand)
 }
 
-func (analyzer *StartupAnalyzer) recordCatchupCard(sourceData *sync.Map, cardID int, won bool, draw bool, opponentDeck string) {
+func (analyzer *StartupAnalyzer) recordCatchupCard(sourceData *sync.Map, cardID int, won bool, isDraw bool, opponentDeck string, inHand bool) {
 	key := catchupCacheKey{cardID, opponentDeck}
 	var data *startupResult
 	if untypedData, ok := sourceData.Load(key); !ok {
@@ -116,12 +117,22 @@ func (analyzer *StartupAnalyzer) recordCatchupCard(sourceData *sync.Map, cardID 
 	} else {
 		data = untypedData.(*startupResult)
 	}
-	if draw {
-		data.draw++
-	} else if won {
-		data.win++
+	applyResult(data, won, isDraw, inHand)
+}
+
+func applyResult(result *startupResult, won bool, isDraw bool, inHand bool) {
+	var drawPointer, winPointer, losePointer *int
+	if inHand {
+		drawPointer, winPointer, losePointer = &result.draw, &result.win, &result.lose
 	} else {
-		data.lose++
+		drawPointer, winPointer, losePointer = &result.nDraw, &result.nWin, &result.nLose
+	}
+	if isDraw {
+		*drawPointer++
+	} else if won {
+		*winPointer++
+	} else {
+		*losePointer++
 	}
 }
 
@@ -160,6 +171,12 @@ func (analyzer *StartupAnalyzer) pushStartup(db *pg.DB) {
 			buffer.WriteString(strconv.Itoa(result.lose))
 			buffer.WriteString(", ")
 			buffer.WriteString(strconv.Itoa(result.win))
+			buffer.WriteString(", ")
+			buffer.WriteString(strconv.Itoa(result.nDraw))
+			buffer.WriteString(", ")
+			buffer.WriteString(strconv.Itoa(result.nLose))
+			buffer.WriteString(", ")
+			buffer.WriteString(strconv.Itoa(result.nWin))
 			buffer.WriteString(")")
 			data = append(data, buffer.String())
 			return true
@@ -175,7 +192,7 @@ func (analyzer *StartupAnalyzer) pushStartup(db *pg.DB) {
 	buffer.Reset()
 	buffer.WriteString("insert into startup values ")
 	buffer.WriteString(strings.Join(data, ", "))
-	buffer.WriteString(" on conflict on constraint card_period_startup do update set draw = startup.draw + excluded.draw, win = startup.win + excluded.win, lose = startup.lose + excluded.lose")
+	buffer.WriteString(" on conflict on constraint card_period_startup do update set draw = startup.draw + excluded.draw, win = startup.win + excluded.win, lose = startup.lose + excluded.lose, n_draw = startup.n_draw + excluded.n_draw, n_win = startup.n_win + excluded.n_win, n_lose = startup.n_lose + excluded.n_lose")
 	sql := buffer.String()
 	Logger.Debugf("Startup sql exec: %v", sql)
 	if _, err := db.Exec(sql); err != nil {
@@ -209,6 +226,12 @@ func (analyzer *StartupAnalyzer) pushCatchup(db *pg.DB) {
 			buffer.WriteString(strconv.Itoa(result.lose))
 			buffer.WriteString(", ")
 			buffer.WriteString(strconv.Itoa(result.win))
+			buffer.WriteString(", ")
+			buffer.WriteString(strconv.Itoa(result.nDraw))
+			buffer.WriteString(", ")
+			buffer.WriteString(strconv.Itoa(result.nLose))
+			buffer.WriteString(", ")
+			buffer.WriteString(strconv.Itoa(result.nWin))
 			buffer.WriteString(")")
 			data = append(data, buffer.String())
 			return true
@@ -224,7 +247,7 @@ func (analyzer *StartupAnalyzer) pushCatchup(db *pg.DB) {
 	buffer.Reset()
 	buffer.WriteString("insert into catchup values ")
 	buffer.WriteString(strings.Join(data, ", "))
-	buffer.WriteString(" on conflict on constraint card_period_catchup do update set draw = catchup.draw + excluded.draw, win = catchup.win + excluded.win, lose = catchup.lose + excluded.lose")
+	buffer.WriteString(" on conflict on constraint card_period_catchup do update set draw = catchup.draw + excluded.draw, win = catchup.win + excluded.win, lose = catchup.lose + excluded.lose, n_draw = catchup.n_draw + excluded.n_draw, n_win = catchup.n_win + excluded.n_win, n_lose = catchup.n_lose + excluded.n_lose")
 	sql := buffer.String()
 	Logger.Debugf("Catchup sql exec: %v", sql)
 	if _, err := db.Exec(sql); err != nil {

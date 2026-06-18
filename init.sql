@@ -81,4 +81,12 @@ CREATE TABLE catchup (
     lose INT,
     win INT,
     CONSTRAINT card_period_catchup UNIQUE (source, id, opponent_deck, period)
-)
+);
+
+ALTER TABLE startup ADD COLUMN n_draw INT DEFAULT 0;
+ALTER TABLE startup ADD COLUMN n_lose INT DEFAULT 0;
+ALTER TABLE startup ADD COLUMN n_win INT DEFAULT 0;
+
+ALTER TABLE catchup ADD COLUMN n_draw INT DEFAULT 0;
+ALTER TABLE catchup ADD COLUMN n_lose INT DEFAULT 0;
+ALTER TABLE catchup ADD COLUMN n_win INT DEFAULT 0;
