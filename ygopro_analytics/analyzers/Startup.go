@@ -36,6 +36,7 @@ type startupCacheKey struct {
 type catchupCacheKey struct {
 	cardID       int
 	opponentDeck string
+	first        bool
 }
 
 func (analyzer *StartupAnalyzer) Analyze(report *MatchReport) {
@@ -67,7 +68,9 @@ func (analyzer *StartupAnalyzer) Analyze(report *MatchReport) {
 		nameA, nameB = nameB, nameA
 	}
 
-	for i := 0; i < len(report.Replays); i++ {
+	replayCount := min(len(report.Replays), len(report.Wins), len(report.First))
+
+	for i := 0; i < replayCount; i++ {
 		replay := &report.Replays[i]
 		if replay.StartHand == 0 {
 			continue
@@ -86,12 +89,12 @@ func (analyzer *StartupAnalyzer) Analyze(report *MatchReport) {
 		for j := 0; j < len(replay.HostDeck.Main); j++ {
 			inHand := j >= hostStart
 			analyzer.recordStartupCard(startupSourceData, replay.HostDeck.Main[j], aWon, isDraw, aFirst, inHand)
-			analyzer.recordCatchupCard(catchupSourceData, replay.HostDeck.Main[j], aWon, isDraw, bDeck, inHand)
+			analyzer.recordCatchupCard(catchupSourceData, replay.HostDeck.Main[j], aWon, isDraw, bDeck, aFirst, inHand)
 		}
 		for j := 0; j < len(replay.ClientDeck.Main); j++ {
 			inHand := j >= clientStart
 			analyzer.recordStartupCard(startupSourceData, replay.ClientDeck.Main[j], bWon, isDraw, bFirst, inHand)
-			analyzer.recordCatchupCard(catchupSourceData, replay.ClientDeck.Main[j], bWon, isDraw, aDeck, inHand)
+			analyzer.recordCatchupCard(catchupSourceData, replay.ClientDeck.Main[j], bWon, isDraw, aDeck, bFirst, inHand)
 		}
 	}
 }
@@ -108,8 +111,8 @@ func (analyzer *StartupAnalyzer) recordStartupCard(sourceData *sync.Map, cardID 
 	applyResult(data, won, isDraw, inHand)
 }
 
-func (analyzer *StartupAnalyzer) recordCatchupCard(sourceData *sync.Map, cardID int, won bool, isDraw bool, opponentDeck string, inHand bool) {
-	key := catchupCacheKey{cardID, opponentDeck}
+func (analyzer *StartupAnalyzer) recordCatchupCard(sourceData *sync.Map, cardID int, won bool, isDraw bool, opponentDeck string, first bool, inHand bool) {
+	key := catchupCacheKey{cardID, opponentDeck, first}
 	var data *startupResult
 	if untypedData, ok := sourceData.Load(key); !ok {
 		data = &startupResult{}
@@ -218,7 +221,13 @@ func (analyzer *StartupAnalyzer) pushCatchup(db *pg.DB) {
 			buffer.WriteString(strconv.Itoa(cacheKey.cardID))
 			buffer.WriteString(", '")
 			buffer.WriteString(cacheKey.opponentDeck)
-			buffer.WriteString("', '")
+			buffer.WriteString("', ")
+			if cacheKey.first {
+				buffer.WriteString("true")
+			} else {
+				buffer.WriteString("false")
+			}
+			buffer.WriteString(", '")
 			buffer.WriteString(currentTime)
 			buffer.WriteString("', ")
 			buffer.WriteString(strconv.Itoa(result.draw))

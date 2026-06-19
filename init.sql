@@ -90,3 +90,6 @@ ALTER TABLE startup ADD COLUMN n_win INT DEFAULT 0;
 ALTER TABLE catchup ADD COLUMN n_draw INT DEFAULT 0;
 ALTER TABLE catchup ADD COLUMN n_lose INT DEFAULT 0;
 ALTER TABLE catchup ADD COLUMN n_win INT DEFAULT 0;
+ALTER TABLE catchup ADD COLUMN first BOOLEAN DEFAULT NULL;
+ALTER TABLE catchup DROP CONSTRAINT card_period_catchup;
+ALTER TABLE catchup ADD CONSTRAINT card_period_catchup UNIQUE (source, id, opponent_deck, first, period);

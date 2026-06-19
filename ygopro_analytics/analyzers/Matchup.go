@@ -86,7 +86,9 @@ func (analyzer *MatchUpAnalyzer) recordMatch(report *MatchReport, matchCacheTarg
 }
 
 func (analyzer *MatchUpAnalyzer) recordPerDuel(report *MatchReport, matchCacheTarget *sync.Map, playerADeckInfo *deckInfo, playerBDeckInfo *deckInfo) {
-	for i := 0; i < len(report.Wins); i++ {
+	duelCount := min(len(report.Wins), len(report.First))
+
+	for i := 0; i < duelCount; i++ {
 		firstPlayer := report.First[i]
 		duelWinner := report.Wins[i]
 
