@@ -221,13 +221,7 @@ func (analyzer *StartupAnalyzer) pushCatchup(db *pg.DB) {
 			buffer.WriteString(strconv.Itoa(cacheKey.cardID))
 			buffer.WriteString(", '")
 			buffer.WriteString(cacheKey.opponentDeck)
-			buffer.WriteString("', ")
-			if cacheKey.first {
-				buffer.WriteString("true")
-			} else {
-				buffer.WriteString("false")
-			}
-			buffer.WriteString(", '")
+			buffer.WriteString("', '")
 			buffer.WriteString(currentTime)
 			buffer.WriteString("', ")
 			buffer.WriteString(strconv.Itoa(result.draw))
@@ -241,6 +235,12 @@ func (analyzer *StartupAnalyzer) pushCatchup(db *pg.DB) {
 			buffer.WriteString(strconv.Itoa(result.nLose))
 			buffer.WriteString(", ")
 			buffer.WriteString(strconv.Itoa(result.nWin))
+			buffer.WriteString(", ")
+			if cacheKey.first {
+				buffer.WriteString("true")
+			} else {
+				buffer.WriteString("false")
+			}
 			buffer.WriteString(")")
 			data = append(data, buffer.String())
 			return true

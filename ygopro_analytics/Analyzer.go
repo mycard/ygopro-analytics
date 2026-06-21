@@ -2,6 +2,7 @@ package ygopro_analytics
 
 import (
 	"main/ygopro_analytics/analyzers"
+	"strings"
 
 	"github.com/go-pg/pg"
 	ygopro_data "github.com/iamipanda/ygopro-data"
@@ -66,6 +67,8 @@ func AnalyzeMatch(report analyzers.MatchReport) {
 	for i := range report.Replays {
 		report.Replays[i].HostDeck.RemoveAlias(environment)
 		report.Replays[i].ClientDeck.RemoveAlias(environment)
+		report.Replays[i].HostName = strings.TrimRight(report.Replays[i].HostName, "\x00")
+		report.Replays[i].ClientName = strings.TrimRight(report.Replays[i].ClientName, "\x00")
 	}
 	for _, analyzer := range onlineMessageAnalyzers {
 		analyzer.Analyze(&report)
